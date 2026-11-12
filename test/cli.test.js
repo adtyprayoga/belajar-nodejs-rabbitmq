@@ -15,9 +15,13 @@ async function withChannel(fn) {
   }
 }
 
-beforeEach(async () => {
+async function restoreTopology() {
   const r = await run("setup");
   assert.equal(r.code, 0, r.stderr);
+}
+
+beforeEach(async () => {
+  await restoreTopology();
   await withChannel((ch) => ch.purgeQueue("email"));
 });
 
@@ -59,21 +63,47 @@ test("producer reports an unreachable broker in one line and exits 1", async () 
 
 test("consumer tells you to run setup when the queue is missing, exits 1", async () => {
   await withChannel((ch) => ch.deleteQueue("email"));
-  const r = await run("consumer");
-  assert.equal(r.code, 1);
-  assert.equal(r.stderr.trim(), "Queue/exchange missing — run npm run setup first");
+  try {
+    const r = await run("consumer");
+    assert.equal(r.code, 1);
+    assert.equal(r.stderr.trim(), "Queue/exchange missing — run npm run setup first");
+  } finally {
+    await restoreTopology();
+  }
 });
 
 test("producer tells you to run setup when the exchange is missing, exits 1", async () => {
   await withChannel((ch) => ch.deleteExchange("notification"));
-  const r = await run("producer");
-  assert.equal(r.code, 1);
-  assert.equal(r.stderr.trim(), "Queue/exchange missing — run npm run setup first");
+  try {
+    const r = await run("producer");
+    assert.equal(r.code, 1);
+    assert.equal(r.stderr.trim(), "Queue/exchange missing — run npm run setup first");
+  } finally {
+    await restoreTopology();
+  }
 });
 
 test("Ctrl+C (SIGINT) stops the consumer cleanly with exit code 0", async () => {
   const consumer = start("consumer");
-  await waitFor(() => consumer.stdout.includes("Waiting for messages"), 5000, "consumer to start");
-  consumer.child.kill("SIGINT");
-  assert.equal(await consumer.exited, 0, consumer.stderr);
+  try {
+    await waitFor(() => consumer.stdout.includes("Waiting for messages"), 5000, "consumer to start");
+    consumer.child.kill("SIGINT");
+    consumer.child.kill("SIGINT"); // an impatient second Ctrl+C must not turn a clean exit into a crash
+    assert.equal(await consumer.exited, 0, consumer.stderr);
+  } finally {
+    consumer.child.kill("SIGKILL");
+  }
+});
+
+test("consumer exits 1 with a one-line error when the broker cancels it (queue deleted)", async () => {
+  const consumer = start("consumer");
+  try {
+    await waitFor(() => consumer.stdout.includes("Waiting for messages"), 5000, "consumer to start");
+    await withChannel((ch) => ch.deleteQueue("email"));
+    assert.equal(await consumer.exited, 1);
+    assert.equal(consumer.stderr.trim(), "Consumer cancelled by server — was the queue deleted? Run npm run setup");
+  } finally {
+    consumer.child.kill("SIGINT");
+    await restoreTopology();
+  }
 });

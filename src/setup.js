@@ -1,6 +1,6 @@
 import { connect, openChannel } from "./config.js";
 import { EXCHANGE, QUEUE, ROUTING_KEY, setupTopology } from "./topology.js";
-import { isMain, runCli } from "./cli.js";
+import { runCli } from "./cli.js";
 
 async function main() {
   const connection = await connect();
@@ -9,8 +9,8 @@ async function main() {
     await setupTopology(channel);
     console.log(`Topology ready: exchange=${EXCHANGE} queue=${QUEUE} key=${ROUTING_KEY}`);
   } finally {
-    await connection.close();
+    await connection.close().catch(() => {});
   }
 }
 
-if (isMain(import.meta.url)) await runCli(main);
+await runCli(main);

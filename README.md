@@ -8,14 +8,15 @@ The Go example expects you to create the exchange and queue by hand in the Rabbi
 
 ## Prerequisites
 
-- Node.js 20 or newer (`node -v`)
+- Node.js 22.9 or newer (`node -v`)
 - Docker with Compose v2 (`docker compose version`)
 
 ## Running
 
 ```bash
-# 1. Install dependencies
+# 1. Install dependencies and create your local config
 npm install
+cp .env.example .env
 
 # 2. Start RabbitMQ (waits until the broker is healthy)
 docker compose up -d --wait
@@ -71,7 +72,7 @@ Open http://localhost:15672 and log in as `guest` / `guest`. You can watch the `
 | ---------- | ------------------------------------ | --------------------- |
 | `AMQP_URL` | `amqp://guest:guest@localhost:5672/` | Broker to connect to. |
 
-For example: `AMQP_URL=amqp://user:pass@other-host:5672/ npm run producer`. See `.env.example`.
+The npm scripts read `.env` (copied from `.env.example` in step 1), so edit it there. An `AMQP_URL` you set in your shell takes precedence over `.env`, for example `AMQP_URL=amqp://user:pass@other-host:5672/ npm run producer`.
 
 ## Tests
 
@@ -88,6 +89,8 @@ npm test
 | --- | --- |
 | `Cannot connect to RabbitMQ at …. Is docker compose up?` | Start the broker: `docker compose up -d --wait`. Check `AMQP_URL` if you changed it. |
 | `Queue/exchange missing — run npm run setup first` | Run `npm run setup`. |
+| `Consumer cancelled by server — was the queue deleted? Run npm run setup` | The `email` queue was deleted while the consumer was running (for example, from the UI). Run `npm run setup`, then start the consumer again. |
+| `.env not found. Continuing without it.` | Harmless. Run `cp .env.example .env` to silence it. |
 | `Bind for 0.0.0.0:5672 failed: port is already allocated` | Another RabbitMQ is using port 5672 or 15672. Stop it, or change the left side of `ports:` in `docker-compose.yml` and set `AMQP_URL` to match. |
 
 ## Stopping
@@ -105,7 +108,7 @@ docker compose down -v   # stop RabbitMQ and delete its data (queues, messages)
 | `src/consumer.js`    | `consumer/main.go` | Consumes queue `email`, prints routing key and body       |
 | `src/setup.js`       | (manual UI steps)  | Declares exchange, queue and binding                      |
 | `src/topology.js`    |                    | Exchange, queue, routing key and consumer tag names       |
-| `src/config.js`      |                    | `AMQP_URL`, connecting and opening channels               |
+| `src/config.js`      |                    | `AMQP_URL` (from `.env`), connecting and opening channels |
 | `src/cli.js`         |                    | One-line errors and exit codes for the scripts            |
 | `docker-compose.yml` |                    | RabbitMQ 4 with the management UI                         |
 | `test/cli.test.js`   |                    | Runs the scripts against the real broker                  |

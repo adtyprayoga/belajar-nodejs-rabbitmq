@@ -1,6 +1,6 @@
 import { connect, openChannel } from "./config.js";
 import { EXCHANGE, ROUTING_KEY } from "./topology.js";
-import { isMain, runCli } from "./cli.js";
+import { runCli } from "./cli.js";
 
 const MESSAGE_COUNT = 10;
 
@@ -21,8 +21,8 @@ async function main() {
     await channel.waitForConfirms();
     console.log(`Published ${MESSAGE_COUNT} messages to exchange=${EXCHANGE} key=${ROUTING_KEY}`);
   } finally {
-    await connection.close();
+    await connection.close().catch(() => {});
   }
 }
 
-if (isMain(import.meta.url)) await runCli(main);
+await runCli(main);

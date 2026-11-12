@@ -8,7 +8,8 @@ function redact(url) {
 }
 
 /** Connect to RabbitMQ, turning a connection failure into a one-line, actionable error. */
-export async function connect(url = AMQP_URL) {
+export async function connect() {
+  const url = AMQP_URL;
   try {
     const connection = await amqp.connect(url);
     // Channel errors are re-emitted here when unhandled; the failing call's rejection reports them.

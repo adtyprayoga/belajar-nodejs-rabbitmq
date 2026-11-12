@@ -1,6 +1,6 @@
 import { connect, openChannel } from "./config.js";
 import { CONSUMER_TAG, QUEUE } from "./topology.js";
-import { isMain, runCli } from "./cli.js";
+import { runCli } from "./cli.js";
 
 async function main() {
   const connection = await connect();
@@ -14,12 +14,17 @@ async function main() {
     throw err;
   }
 
+  let rejectClosed;
   const closed = new Promise((resolve, reject) => {
+    rejectClosed = reject;
     connection.on("close", resolve);
     connection.on("error", reject);
   });
 
-  process.once("SIGINT", async () => {
+  let stopping = false;
+  process.on("SIGINT", async () => {
+    if (stopping) return; // ignore repeated Ctrl+C while we're already closing
+    stopping = true;
     await channel.close().catch(() => {});
     await connection.close().catch(() => {});
   });
@@ -29,7 +34,8 @@ async function main() {
     QUEUE,
     (message) => {
       if (message === null) {
-        console.log("Consumer cancelled by server");
+        // The broker cancelled us, e.g. because the queue was deleted.
+        rejectClosed(new Error("Consumer cancelled by server — was the queue deleted? Run npm run setup"));
         connection.close().catch(() => {});
         return;
       }
@@ -43,4 +49,4 @@ async function main() {
   await closed;
 }
 
-if (isMain(import.meta.url)) await runCli(main);
+await runCli(main);
