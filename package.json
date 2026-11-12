@@ -1,0 +1,19 @@
+{
+  "name": "belajar-nodejs-rabbitmq",
+  "version": "1.0.0",
+  "description": "Node.js port of ProgrammerZamanNow/belajar-golang-rabbitmq",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "setup": "node src/setup.js",
+    "producer": "node src/producer.js",
+    "consumer": "node src/consumer.js",
+    "test": "node --test --test-concurrency=1 test/*.test.js"
+  },
+  "dependencies": {
+    "amqplib": "^2.3.1"
+  }
+}
