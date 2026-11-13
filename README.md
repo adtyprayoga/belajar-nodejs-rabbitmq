@@ -6,6 +6,8 @@ A **producer** publishes 10 messages (`Hello 0` … `Hello 9`, header `sample: v
 
 The Go example expects you to create the exchange and queue by hand in the RabbitMQ UI. Here, `npm run setup` does it for you.
 
+For a 15–20 minute presentation, follow the [setup-to-live-demo presenter guide](docs/live-demo.md). It includes commands, talking points, and expected queue counts.
+
 ## Prerequisites
 
 - Node.js 22.9 or newer (`node -v`)
