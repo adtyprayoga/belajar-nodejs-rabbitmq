@@ -1,7 +1,5 @@
 # belajar-nodejs-rabbitmq
 
-A Node.js port of [ProgrammerZamanNow/belajar-golang-rabbitmq](https://github.com/ProgrammerZamanNow/belajar-golang-rabbitmq).
-
 A **producer** publishes 10 messages (`Hello 0` … `Hello 9`, header `sample: value`) to the exchange `notification` with routing key `email`. A **consumer** reads the queue `email` and prints each message's routing key and body.
 
 The Go example expects you to create the exchange and queue by hand in the RabbitMQ UI. Here, `npm run setup` does it for you.
