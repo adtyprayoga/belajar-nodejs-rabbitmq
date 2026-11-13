@@ -107,3 +107,23 @@ test("consumer exits 1 with a one-line error when the broker cancels it (queue d
     await restoreTopology();
   }
 });
+
+test("setup explains an exchange that exists with different settings, exits 1", async () => {
+  // RabbitMQ 4 refuses non-durable queues outright, so the realistic mismatch
+  // is an exchange created in the UI with the wrong type.
+  await withChannel(async (ch) => {
+    await ch.deleteExchange("notification");
+    await ch.assertExchange("notification", "fanout", { durable: true });
+  });
+  try {
+    const r = await run("setup");
+    assert.equal(r.code, 1);
+    assert.equal(
+      r.stderr.trim(),
+      "Exchange/queue exists with different settings — delete it in the UI or run docker compose down -v",
+    );
+  } finally {
+    await withChannel((ch) => ch.deleteExchange("notification"));
+    await restoreTopology();
+  }
+});
